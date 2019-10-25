@@ -4,7 +4,6 @@ import time
 from datetime import date
 import os
 import sys
-# from itertools import izip as izip
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from pyvirtualdisplay import Display
@@ -13,8 +12,8 @@ from botocore.exceptions import ClientError
 from credentials import loadCredentials
 
 # Global Variables to specify High and Low Extreme Sentiment
-LOW_EXTREME = '20'
-HIGH_EXTREME = '85'
+LOW_EXTREME = '' # Integer 0 to 100
+HIGH_EXTREME = '' # Integer 0 to 100
 
 def main():
     query_database()
@@ -42,7 +41,7 @@ def query_database():
                     WHERE name LIKE '%%Optix%%'
                     AND CAST(last_close AS float)  > %s
                         '''  
-    
+    # dailyIndicatorSTG is where we query our Optix values.
     cursor.execute(select_query, [test_extreme])
     positiveOptixIndicatorQueryList = cursor.fetchall() # Add all of the results to a list. Creates list of tuples
 
@@ -191,6 +190,7 @@ def run_backtest(webPageList):
                                 port = database_port,
                                 database = database_db)
 
+        # String replace SQL query to insert into a table named `backtest_results` in our AWS postgres database.
         current_test_data = (currentTestSymbol, currentTestIndicator, currentTestLookbackPeriod, currentTestObservationPeriod, currentTestIndexFilter,
                         currentTestIndicatorSmoothing, currentTestStartdate, currentTestEndDate, currentTestOverlapping, currentTestIndexFilterSwap, currentTestIndicatorLevel,
                         currentTestMarketEnvironment, currentTestIndexMASlope, currentTotalReturn, currentAvgReturn, currentZSCore, currentBuyHoldReturn, currentWinRatePercent,

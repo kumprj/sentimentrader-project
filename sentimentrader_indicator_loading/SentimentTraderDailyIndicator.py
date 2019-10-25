@@ -41,7 +41,7 @@ driver.close()
 print('Sentiment report downloaded')
 
 # remove key column for import
-# Linux Image default downloads dir: /root/Downloads/
+# Amazon Linux Image default downloads dir: /root/Downloads/
 with open('/root/Downloads/sentimenTrader_Daily_Sentiment_Data.csv', 'r') as fin, open('/root/Downloads/sentimenTrader_Daily_Sentiment_DataE.csv', 'w') as fout:
     reader = csv.reader(fin) 
     reader.next() #skip header
@@ -62,7 +62,7 @@ connection = psycopg2.connect(user = database_user,
                         port = database_port,
                         database = database_db)
 
-
+# dailyIndicatorSTG is our Daily Indicator table in the db.
 with open ('/root/Downloads/sentimenTrader_Daily_Sentiment_DataE.csv', 'r') as f:
     cursor = connection.cursor()
     cursor.execute('delete from "dailyIndicatorSTG";')

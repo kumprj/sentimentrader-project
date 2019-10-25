@@ -1,9 +1,11 @@
+# Sentimentrader.com username and password
 sentimentrader:
-  username: wellsjk
-  password: hydepark1@
+  username: sentimentrader username
+  password: sentimentrader password
+# postgres database connection information 
 database:
-  username: kumprj
-  password: hydepark1
-  host: test-db-first-try.cnxdgopof2w9.us-east-2.rds.amazonaws.com
-  port: "5432"
-  database: myFirstDatabase
+  username: aws db user
+  password: aws db password
+  host: aws endpoint
+  port: "aws db port"
+  database: databasename
