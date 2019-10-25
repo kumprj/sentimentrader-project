@@ -1,0 +1,5 @@
+EasyProcess==0.2.7
+psycopg2-binary==2.8.3
+PyVirtualDisplay==0.2.4
+selenium==3.141.0
+urllib3==1.25.6

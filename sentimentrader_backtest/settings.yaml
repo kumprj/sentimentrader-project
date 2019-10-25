@@ -1,0 +1,9 @@
+sentimentrader:
+  username: wellsjk
+  password: hydepark1@
+database:
+  username: kumprj
+  password: hydepark1
+  host: test-db-first-try.cnxdgopof2w9.us-east-2.rds.amazonaws.com
+  port: "5432"
+  database: myFirstDatabase
