@@ -1,6 +1,6 @@
 # SentimenTrader Application
 
-Application (STA for short) is structured into two components: daily indicator load and the backtesting script. 
+Application (STA for short) is structured into two components: daily indicator load and the backtesting script. This project is collaborated with [wellsjk](https://github.com/wellsjk). It also requires a sentimentrader.com subscription and familiarity with Python, AWS, Linux, Selenium, Docker, and basic SQL Statements.
 
 ## Set up a Database
 We use an AWS Postgres DB - [Setup Instructions](https://aws.amazon.com/getting-started/tutorials/create-connect-postgresql-db/) for handling the data with this application. The default tutorial values are fine, but be sure to store them for later. Any postgres database that you can connect to via psycopg2 should be fine. in the __sql_scripts__ folder we have the table creation scripts with your favorite database management tool. I use SQLWorkbench. 
