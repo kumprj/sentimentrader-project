@@ -7,6 +7,8 @@ from selenium.webdriver.common.keys import Keys
 from pyvirtualdisplay import Display
 from credentials import loadCredentials
 
+__author__ = "Joseph Wells (Primary), Robert Kump (Secondary)"
+
 # User Information
 credentials = loadCredentials()
 sentiment_user = credentials["sentimentrader"]["username"]
