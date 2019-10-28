@@ -36,7 +36,7 @@ Repeat for the other python script.
 
 ## Deploying the Application
 
-Create an AWS ECS Task Definition - [Create an ECS Task Definition](https://console.aws.amazon.com/ecs/home?region=us-east-1#/taskDefinitions/create) - note this links takes you to US-East 1. Recommended to use the same region as your other Services. Specify Fragate and select the default ecs task role. Select one of your containers. We'll repeat these steps for the second container.
+Create an AWS ECS Task Definition - [Create an ECS Task Definition](https://console.aws.amazon.com/ecs/home?region=us-east-1#/taskDefinitions/create) - note this links takes you to US-East 1. Recommended to use the same region as your other Services. Specify Fargate and select the default ecs task role. Select one of your containers. We'll repeat these steps for the second container.
 
 I allocated 0.5 GB and 0.25 vCPU for the daily indicator load, and 2GB and 0.5 vCPU for the backtest. For backtest I set a soft limit on the container of 750MiB and no hard limit. Soft Limit of 128 MiB for the daily indicator load container.
 
