@@ -1,7 +1,7 @@
 FROM amazonlinux:latest
 
 COPY requirements.txt /home/requirements.txt
-COPY SentimentTraderBacktest_stg.py /home/SentimentTraderBacktest_stg.py
+COPY SentimentTraderBacktest.py /home/SentimentTraderBacktest.py
 COPY settings.yaml /home/settings.yaml
 COPY credentials.py /home/credentials.py
 # Change to aws s3 cp from S3 Bucket.
@@ -29,4 +29,4 @@ RUN cd /tmp && wget https://chromedriver.storage.googleapis.com/77.0.3865.40/chr
 
 RUN curl https://intoli.com/install-google-chrome.sh | bash && mv /usr/bin/google-chrome-stable /usr/bin/google-chrome && rm -rf /var/cache/yum
 
-CMD python3 /home/SentimentTraderBacktest_stg.py
+CMD python3 /home/SentimentTraderBacktest.py
