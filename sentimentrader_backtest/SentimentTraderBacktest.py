@@ -11,6 +11,9 @@ import boto3
 from botocore.exceptions import ClientError
 from credentials import loadCredentials
 
+
+__author__ = "Robert Kump (Primary), Joseph Wells (Secondary)"
+
 # Global Variables to specify High and Low Extreme Sentiment
 LOW_EXTREME = '' # Integer 0 to 100
 HIGH_EXTREME = '' # Integer 0 to 100

@@ -1,9 +1,9 @@
 # SentimenTrader Application
 
-Application (STA for short) is structured into two components: daily indicator load and the backtesting script. This project is collaborated with [wellsjk](https://github.com/wellsjk). It also requires a sentimentrader.com subscription and familiarity with Python, AWS, Linux, Selenium, Docker, and basic SQL Statements.
+The Application (STA for short) is structured into two components: daily indicator load and the backtesting script. This project is collaborated with [wellsjk](https://github.com/wellsjk). It requires a sentimentrader.com subscription and an AWS Account.
 
 ## Set up a Database
-We use an AWS Postgres DB - [Setup Instructions](https://aws.amazon.com/getting-started/tutorials/create-connect-postgresql-db/) for handling the data with this application. The default tutorial values are fine, but be sure to store them for later. Any postgres database that you can connect to via psycopg2 should be fine. in the __sql_scripts__ folder we have the table creation scripts with your favorite database management tool. I use SQLWorkbench. 
+We use an AWS Postgres DB [Setup Instructions](https://aws.amazon.com/getting-started/tutorials/create-connect-postgresql-db/) for handling the data with this application. The default tutorial values are fine, but be sure to store them for later. Any postgres database that you can connect to via psycopg2 should be fine. in the __sql_scripts__ folder we have the table creation scripts with your favorite database management tool. I use SQLWorkbench. 
 
 You should now have:
 * An AWS postgres db, with the connection information available in the RDS Console.
@@ -24,7 +24,7 @@ Specify your low and high extremes to your fitting and fill out your __setings.y
 * Run through the list of backtests to run, and parse the results. Store this data into the database.
 
 ## Build the Container
-Both scripts are run as containers. In the Dockerfile's for each, you can see we use an Amazon Linux AMI (similar to CentOS/RHEL). In the Dockerfile, we copy our necessary files to the linux container first, install miscellaneous software including python, and Google Chrome. We then run the backtest using Selenium. The Dockerfile does not need any modification.
+Both scripts are run as containers on an Amazon Linux AMI image. In the Dockerfile's for each, you can see we use an Amazon Linux AMI (similar to CentOS/RHEL). In the Dockerfile, we copy our necessary files to the linux container first, install miscellaneous software including python, and Google Chrome. We then run the backtest using Selenium. The Dockerfile does not need any modification.
 
 First, set up an ECR Repository - [Setup Instructions](https://console.aws.amazon.com/ecr/home). Name is arbitrary - our two are titled backtest_prd and dailyindicatorload.
 
@@ -36,7 +36,7 @@ Repeat for the other python script.
 
 ## Deploying the Application
 
-Create an AWS ECS Task Definition - [Create an ECS Task Definition](https://console.aws.amazon.com/ecs/home?region=us-east-1#/taskDefinitions/create) - note this links takes you to US-East 1. Recommended to use the same region as your other Services. Specify Fragate and select the default ecs task role. Select one of your containers. We'll repeat these steps for the second container.
+Create an AWS ECS Task Definition - [Create an ECS Task Definition](https://console.aws.amazon.com/ecs/home?region=us-east-1#/taskDefinitions/create) - note this links takes you to US-East 1. Recommended to use the same region as your other Services. Specify Fargate and select the default ecs task role. Select one of your containers. We'll repeat these steps for the second container.
 
 I allocated 0.5 GB and 0.25 vCPU for the daily indicator load, and 2GB and 0.5 vCPU for the backtest. For backtest I set a soft limit on the container of 750MiB and no hard limit. Soft Limit of 128 MiB for the daily indicator load container.
 
