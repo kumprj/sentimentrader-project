@@ -1,9 +1,13 @@
+# pylint: disable=no-name-in-module
+
+# from flask_table import Table, Col
 import psycopg2
 import csv
 import time
 from datetime import date
 import os
 import sys
+# from itertools import izip as izip
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from pyvirtualdisplay import Display
@@ -11,12 +15,11 @@ import boto3
 from botocore.exceptions import ClientError
 from credentials import loadCredentials
 
-
-__author__ = "Robert Kump (Primary), Joseph Wells (Secondary)"
-
+# Sample Hedgers url. These will need revised.
+# 1) Cotton: https://sentimentrader.com/users/backtest/?indicator_smoothing=0&index_filter=0&market_environment=0&index_ma_slope=0&lookback_period=16&observation_value=1&observation_period=4&indicator_condition=3&indicator_level=30000&index=COTTON&indicator=Cotton+Hedgers+Position
 # Global Variables to specify High and Low Extreme Sentiment
-LOW_EXTREME = '' # Integer 0 to 100
-HIGH_EXTREME = '' # Integer 0 to 100
+LOW_EXTREME = '20'
+HIGH_EXTREME = '80'
 
 def main():
     query_database()
@@ -39,26 +42,26 @@ def query_database():
 
     cursor = connection.cursor()
     test_extreme = HIGH_EXTREME
-    select_query = '''SELECT name, indicator, last_close
-                    FROM "dailyIndicatorSTG"
-                    WHERE name LIKE '%%Optix%%'
-                    AND CAST(last_close AS float)  > %s
+    select_query = '''select name, indicator, last_close from public."dailyIndicatorSTG"
+                        where ((length("indicator")<6
+                        and "indicator" not in('gex','po_oj')) or name like '%%Optix%%')
+                        and CAST(last_close AS float) > %s
                         '''  
-    # dailyIndicatorSTG is where we query our Optix values.
+    
     cursor.execute(select_query, [test_extreme])
     positiveOptixIndicatorQueryList = cursor.fetchall() # Add all of the results to a list. Creates list of tuples
 
     test_extreme = LOW_EXTREME
-    select_query = '''SELECT name, indicator, last_close
-                    FROM "dailyIndicatorSTG"
-                    WHERE name LIKE '%%Optix%%'
-                    AND CAST(last_close AS float)  < %s
+    select_query = '''select name, indicator, last_close from public."dailyIndicatorSTG"
+                        where ((length("indicator")<6
+                        and "indicator" not in('gex','po_oj')) or name like '%%Optix%%')
+                        and CAST(last_close AS float) < %s
                         '''
    
     cursor.execute(select_query, [test_extreme])
     negativeOptixIndicatorQueryList = cursor.fetchall()
 
-    # Combine our positive and negative lists.
+    # # Combine our positive and negative lists.
     optixIndicatorQueryList = positiveOptixIndicatorQueryList + negativeOptixIndicatorQueryList
 
     # Gets each element from the tuples the database returns
@@ -193,7 +196,6 @@ def run_backtest(webPageList):
                                 port = database_port,
                                 database = database_db)
 
-        # String replace SQL query to insert into a table named `backtest_results` in our AWS postgres database.
         current_test_data = (currentTestSymbol, currentTestIndicator, currentTestLookbackPeriod, currentTestObservationPeriod, currentTestIndexFilter,
                         currentTestIndicatorSmoothing, currentTestStartdate, currentTestEndDate, currentTestOverlapping, currentTestIndexFilterSwap, currentTestIndicatorLevel,
                         currentTestMarketEnvironment, currentTestIndexMASlope, currentTotalReturn, currentAvgReturn, currentZSCore, currentBuyHoldReturn, currentWinRatePercent,
@@ -265,12 +267,19 @@ def generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList):
     # for optixName, indicatorName, lastClose in izip(optixNameList, indicatorNameList, lastCloseList): # Python 2 code
     for optixName, indicatorName, lastClose in zip(optixNameList, indicatorNameList, lastCloseList):
     # for optixName, indicatorName in izip(optixNameList, indicatorNameList):
+        fullLengthIndicatorName = indicatorName
         for lengthOfTime in listOfObservationValues:
-
+            isACompany = False
+            if len(fullLengthIndicatorName) < 6 and fullLengthIndicatorName != 'gex' and fullLengthIndicatorName !='po_oj': 
+                isACompany = True
+            
             currentBackTestUrl = baseUrl # Make a local copy of the base URL for manipulation.
-
-            optixName = optixName.replace(" ", "+") # Replace "SPY Optix with SPY+Optix"                    
-            currentBackTestUrl = currentBackTestUrl.replace('indicatorValue', optixName)
+            if isACompany:
+                indicatorCompanySymbol = indicatorName + "+Optix" # NFLX+Optix
+                currentBackTestUrl = currentBackTestUrl.replace('indicatorValue', indicatorCompanySymbol)                
+            else:
+                optixName = optixName.replace(" ", "+") # Replace "SPY Optix with SPY+Optix"                    
+                currentBackTestUrl = currentBackTestUrl.replace('indicatorValue', optixName)   
 
             indicatorName = indicatorName.replace('etf_','') # Indicator is entered into db as etf_indexname i.e. etf_lqd, so we split that off.
             indicatorName = indicatorName.replace('po_','') # Indicator is entered into db as po_indexname i.e. po_xx, so we split that off.
@@ -294,16 +303,21 @@ def generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList):
             currentBackTestUrl = currentBackTestUrl.replace('observationPeriodValue', observationPeriodValue)
             
 
-            indicatorLevelValue = get_closest_optix_extreme(lastClose) # Check if we're at a low extreme or high extreme.
+            indicatorLevelValue = get_closest_optix_extreme(lastClose) # Check if we're at a low extreme or high extreme. If its a stock, append accordingly.
+            currentExtreme = indicatorLevelValue
+            if isACompany:
+                indicatorLevelValue = indicatorLevelValue + "&is_sp1500=yes"
+
             currentBackTestUrl = currentBackTestUrl.replace('indicatorLevelValue', indicatorLevelValue) # Set the value low or high extreme.
             
-            if indicatorLevelValue == LOW_EXTREME:
+            if currentExtreme == LOW_EXTREME:
                 indicatorConditionValue = '4'
                 currentBackTestUrl = currentBackTestUrl.replace('indicatorConditionValue', indicatorConditionValue)
             else:
                 currentBackTestUrl = currentBackTestUrl.replace('indicatorConditionValue', indicatorConditionValue)                   
 
-            # Append URL to our list to backtest for each period of time.            
+            # Append URL to our list to backtest for each period of time.   
+            # print(currentBackTestUrl)        
             webPageList.append(currentBackTestUrl)  
 
         # end time period back tests of 1/3/6/9/12 months          
