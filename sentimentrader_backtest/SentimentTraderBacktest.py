@@ -264,9 +264,7 @@ def generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList):
     # observationValue = '1' # How many months to look back <-- I believe this is unused/not needed.
     # indicatorValue = 'SPY+Optix' # Optix value <-- I believe this is unused/not needed.
 
-    # for optixName, indicatorName, lastClose in izip(optixNameList, indicatorNameList, lastCloseList): # Python 2 code
     for optixName, indicatorName, lastClose in zip(optixNameList, indicatorNameList, lastCloseList):
-    # for optixName, indicatorName in izip(optixNameList, indicatorNameList):
         fullLengthIndicatorName = indicatorName
         for lengthOfTime in listOfObservationValues:
             isACompany = False
@@ -287,14 +285,15 @@ def generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList):
             indicatorName = indicatorName.replace('model_score_','') # Indicator is entered into db as model_score_indexname i.e. model_score_xx, so we split that off.
             indicatorName = indicatorName.upper()
 
+            # Edge Cases due to issues with Sentiment Trader backtest engine
             if indicatorName == 'EFA':
                 continue
             if indicatorName == 'XBT': indicatorName = 'BITCOIN' # Edge case where the indicator value does not match the sentimentrader url.
-            if indicatorName == 'INT' or indicatorName == 'SHORT': indicatorName = 'SPY' # Edge case - Short/Intermediate Term Optimism isn't an indicator.
+            if indicatorName == 'INT' or indicatorName == 'SHORT': indicatorName = 'SPY' # Edge case - Short/Intermediate Term Optimism isn't an indicator, so we use SPY.
 
             currentBackTestUrl = currentBackTestUrl.replace('indexValue', indicatorName) # Append the index/commodity/etf that we are backtesting.
             
-            # Set default
+            # Set default values
             currentBackTestUrl = currentBackTestUrl.replace('observationValue', lengthOfTime)
             currentBackTestUrl = currentBackTestUrl.replace('indicatorSmoothingValue', indicatorSmoothingValue)
             currentBackTestUrl = currentBackTestUrl.replace('indexFilterValue', indexFilterValue)
@@ -317,8 +316,7 @@ def generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList):
             else:
                 currentBackTestUrl = currentBackTestUrl.replace('indicatorConditionValue', indicatorConditionValue)                   
 
-            # Append URL to our list to backtest for each period of time.   
-            # print(currentBackTestUrl)        
+            # Append URL to our list to backtest for each period of time.        
             webPageList.append(currentBackTestUrl)  
 
         # end time period back tests of 1/3/6/9/12 months          
