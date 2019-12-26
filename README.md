@@ -3,7 +3,7 @@
 The Application is structured into two components: daily indicator load and the backtesting script. This project is collaborated with [wellsjk](https://github.com/wellsjk). It requires a sentimentrader.com subscription and an AWS Account.
 
 ## Set up a Database
-We use an AWS Postgres DB [Setup Instructions](https://aws.amazon.com/getting-started/tutorials/create-connect-postgresql-db/) for handling the data with this application. The default tutorial values are fine, but be sure to store them for later. Any postgres database that you can connect to via psycopg2 should be fine. in the __sql_scripts__ folder we have the table creation scripts with your favorite database management tool. I use SQLWorkbench. 
+We use an AWS Postgres DB ([Setup Instructions](https://aws.amazon.com/getting-started/tutorials/create-connect-postgresql-db/)) for handling the data with this application. The default tutorial values are fine, but be sure to store them for later. Any postgres database that you can connect to via psycopg2 should be fine. in the __sql_scripts__ folder we have the table creation scripts with your favorite database management tool. I use SQLWorkbench. 
 
 You should now have:
 * An AWS postgres db, with the connection information available in the RDS Console.
