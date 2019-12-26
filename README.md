@@ -36,7 +36,7 @@ Repeat for the other python script.
 
 ## Deploying the Application
 
-Create an AWS ECS Task Definition - [Create an ECS Task Definition](https://console.aws.amazon.com/ecs/home?region=us-east-1#/taskDefinitions/create) - note this links takes you to US-East 1. Recommended to use the same region as your other Services. Specify Fargate and select the default ecs task role. Select one of your containers. We'll repeat these steps for the second container.
+Create an AWS ECS Task Definition - [Create an ECS Task Definition](https://console.aws.amazon.com/ecs/home?region=us-east-1#/taskDefinitions/create). Note this links takes you to US-East 1. Recommended to use the same region as your other Services. Specify Fargate and select the default ecs task role. Select one of your containers. We'll repeat these steps for the second container.
 
 I allocated 0.5 GB and 0.25 vCPU for the daily indicator load, and 2GB and 0.5 vCPU for the backtest. For backtest I set a soft limit on the container of 750MiB and no hard limit. Soft Limit of 128 MiB for the daily indicator load container.
 
@@ -45,4 +45,4 @@ Next create your [AWS Fargate Cluster](https://aws.amazon.com/ecs/) and click Cl
 Click your fargate cluster and you will see a list of tabs. Tasks lets you run a container once, or you can utilize a scheduled task. We run the daily indicator load and the backtests every 6-8 hours, though the values are usually only updated daily.
 
 # Using the Data
-The whole purpose of this is to take the backtest results and use them to make educated trade decisions. How someone handles this data is very open ended. We have a simple boostrapped webpage that has pages by date, and shows the results relevant to our risk tolerance (i.e. if SPY returned >5% for the next three observation periods). You can also add shorter and longer dated observation periods. 
+The whole purpose of this is to take the backtest results and use them to make educated trade decisions. How someone handles this data is very open ended. We have a simple boostrapped webpage that has pages by date, and shows the results relevant to our risk tolerance (i.e. if SPY returned >5% for the next three observation periods). You can also add shorter and longer dated observation periods. We are displaying the results at [kumprj.com](kumprj.com). Additionally, we are sending an email each day of results showing high and low success rates. Please view the email_scripts folder for more information on that.
