@@ -28,11 +28,11 @@ Both scripts are run as containers on an Amazon Linux AMI image. In the Dockerfi
 
 First, set up an ECR Repository - [Setup Instructions](https://console.aws.amazon.com/ecr/home). Name is arbitrary - our two are titled backtest_prd and dailyindicatorload.
 
-CD to the directory of the Dockerfile (sentimentrader_backtest/) and build the dockerfile `docker build .`
+CD to the directory of the Dockerfile (sentimentrader_backtest/) and build the dockerfile `docker build -t namehere:latest .`
 
 Follow these steps to upload a docker image to ECR: [steps here](https://docs.aws.amazon.com/AmazonECR/latest/userguide/docker-push-ecr-image.html).
 
-Repeat for the other python script.
+Repeat for the other Python script.
 
 ## Deploying the Application
 
