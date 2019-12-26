@@ -13,14 +13,12 @@ from generate_email import generateListToEmail
 def main():
     send_email()
 
-
 def parseTickers(listOfTickers):
     resultingList = []
     splitNewLineList = listOfTickers.splitlines()
 
-    # wrap lines in p tags
+    # wrap lines in p tags for cleaner email reading
     for item in splitNewLineList:
-        # print(f'i is {i}')
         resultingList.append('<p>'+item+'</p>')
     
     return resultingList
