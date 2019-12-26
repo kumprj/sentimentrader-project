@@ -10,7 +10,7 @@ You should now have:
 * Three tables created with the SQL Scripts. 
 
 ## Indicator Loading
-Folder __sentimentrader_indicator_loading__ handles the acquisition of Sentimentrader.com's Indicators and stores them in the database. Action items in this folder include replacing __SentimenTraderDailyIndactor.py__'s database values with your values (if they differ). Update  __settings.yaml__ with your credential information. A template is supplied. Once those table values and credentials are supplied, we are all set. At a glance, the script:
+Folder __sentimentrader_indicator_loading__ handles the acquisition of Sentimentrader.com's Indicators and stores them in the database. Action items in this folder include replacing __SentimenTraderDailyIndactor.py__'s database values with your values (if they differ), and updating __settings.yaml__ with your credential information. A template is supplied. Once those table values and credentials are supplied, we are all set. At a glance, the script:
 * Acquires a CSV File of the Sentimentrader Indicators and downloads it to the container in the default location.
 * Writes the indicator values to a stg table and prd table using Python csv/file parsing and a psycopg2 insert.
 
