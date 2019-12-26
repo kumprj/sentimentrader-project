@@ -7,10 +7,10 @@ from datetime import date
 
 
 def main():
-    generateListToemail()
+    generateListToEmail()
 
 def generateListToEmail():
-    url = '.. end point ..'
+    url = '..rest api endpoint..'
     todaysDate = date.today()
     todaysDate = todaysDate.strftime("%m/%d/%y")
     todaysDate = todaysDate.replace('/','_')
