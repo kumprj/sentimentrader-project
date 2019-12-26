@@ -4,3 +4,5 @@ This section of code sends a daily email update to our inboxes, outlining ticker
 as well. This is to highlight some of the truly extreme scenarios.
 
 Boto requires aws cli to be configured, so we're passing those credentials as environment variables for the time being. Run in Fargate or your favorite container management service. 
+
+To run this script, build the Dockerfile with the two environment variables mentioned above. In send_email.py's send_email method, replace the sender and recipients with email addresses verified on your AWS SES. 
