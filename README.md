@@ -17,7 +17,7 @@ Folder __sentimentrader_indicator_loading__ handles the acquisition of Sentiment
 ## Daily Backtest Script
 __SentimenTraderBacktest.py__ in sentimentrader_backtest folder handles the backtests. One of the Indicators is called an Optimism Index (Optix) and we will use this to make trade decisions. We want to identify when an ETF, Commodity, etc. reaches an extreme level of optimism or pessimism (20 and 80 to sentimentrader, but your mileage may vary). When a ticker reaches our low or high extreme, we add it to a list to be backtested and we parse the results. By default we are saying "backtest this ticker to show what the results were the last time this happened." We are testing to see the 1/3/6/9/12 month returns historically and can then decide if the results are strong enough to go long or short. 
 
-Specify your low and high extremes to your fitting and fill out your __setings.yaml__ elements. The database names will need to be updated to match yours, should they differ. At a glance, this script:
+Specify your low and high extremes to your fitting and fill out your __settings.yaml__ elements. The database names will need to be updated to match yours, should they differ. At a glance, this script:
 * Queries our stg table to get the low and high extremes and creates a list of tickers.
 * Grab the Optix Name (i.e. SPY Optix), indicator name (SPY) and the last Optix close and enter them into three lists.
 * Generate five URLs for each indicator. Say SPY is above our High Extreme of 80 - we want to see the returns at 1/3/6/9/12 months of SPY when it has reached this level. Another solution is to test for the exact optix value, instead of just above 80. Add the backtest URL to a list
