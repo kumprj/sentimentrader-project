@@ -24,10 +24,10 @@ def generateListToEmail():
     masterList = []
     stringListToEmail = []
     for backtestEntry in jsonData:
-        # print(backtestEntry)
         currentWinRate = backtestEntry['win_rate']
         currentWinRate = currentWinRate.replace('%','')
         currentWinRateAsInt = int(currentWinRate)
+        
         if (currentWinRateAsInt > 20 and currentWinRateAsInt < 80):
             continue
 

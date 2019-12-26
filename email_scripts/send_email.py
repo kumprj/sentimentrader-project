@@ -27,9 +27,9 @@ def send_email():
     stringsToEmail =  generateListToEmail()
     stringsOnSeparateLines = "\n".join(stringsToEmail)
 
-    SENDER = "..."
-    RECIPIENT1 = "..."
-    RECIPIENT2 = "..."
+    SENDER = "..." # Supply email to come from (must be verified in SES)
+    RECIPIENT1 = "..." # Supply email to send to (must be verified in SES)
+    RECIPIENT2 = "..." # Supply email to send to (must be verified in SES)
     AWS_REGION = "us-east-1"
     SUBJECT = "10 Day MA Daily Extreme Update"
 
