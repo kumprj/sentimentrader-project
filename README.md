@@ -1,9 +1,9 @@
 # SentimenTrader Application
 
-The Application is structured into two components: daily indicator load and the backtesting script. This project is collaborated with [wellsjk](https://github.com/wellsjk). It requires a sentimentrader.com subscription and an AWS Account.
+The Application is structured into two components: daily indicator load and the backtesting script. This project is collaborated with [wellsjk](https://github.com/wellsjk). It requires a sentimentrader.com subscription and an AWS account.
 
 ## Set up a Database
-We use an AWS Postgres DB ([Setup Instructions](https://aws.amazon.com/getting-started/tutorials/create-connect-postgresql-db/)) for handling the data with this application. The default tutorial values are fine, but be sure to store them for later. Any postgres database that you can connect to via psycopg2 should be fine. in the __sql_scripts__ folder we have the table creation scripts with your favorite database management tool. I use SQLWorkbench. 
+We use an AWS RDS Postgres instance ([Setup Instructions](https://aws.amazon.com/getting-started/tutorials/create-connect-postgresql-db/)) for handling the data with this application. The default tutorial values are fine, but be sure to store them for later. Alternatively, any postgres database that you can connect to via psycopg2 should be fine. In the __sql_scripts__ folder we have the table creation scripts with your favorite database management tool. I use SQLWorkbench. 
 
 You should now have:
 * An AWS postgres db, with the connection information available in the RDS Console.
@@ -11,14 +11,14 @@ You should now have:
 
 ## Indicator Loading
 Folder __sentimentrader_indicator_loading__ handles the acquisition of Sentimentrader.com's Indicators and stores them in the database. Action items in this folder include replacing __SentimenTraderDailyIndactor.py__'s database values with your values (if they differ), and updating __settings.yaml__ with your credential information. A template is supplied. Once those table values and credentials are supplied, we are all set. At a glance, the script:
-* Acquires a CSV File of the Sentimentrader Indicators (updated daily, hence the title for this script) and downloads it to the container in the default location.
-* Writes the values to a stg table and prd table using Python csv/file parsing and a psycopg2 insert.
+* Acquires a CSV File of the Sentimentrader Indicators and downloads it to the container in the default location.
+* Writes the indicator values to a stg table and prd table using Python csv/file parsing and a psycopg2 insert.
 
 ## Daily Backtest Script
-__SentimenTraderBacktest.py__ in sentimentrader_backtest folder handles the backtests. One of the Indicators is called an Optimism Index (Optix) and we will use this to make trade decisions. We want to identify when an ETF, Commodity, etc. reaches an extreme level of optimism or pessimism (20 and 80 to sentimentrader, but your mileage may vary). When a ticker reaches our low or high extreme, we add it to a list to be backtested and we parse the results. By default we are saying "backtest this ticker to show what the results were the last time this happened." We are testing to see the 1/3/6/9/12 month returns historically and can then decide if the results are strong enough to go long or short. 
+__SentimenTraderBacktest.py__ in sentimentrader_backtest folder handles the backtests. One of these Indicators is called an Optimism Index (Optix). An optimism index exists for S&P 1500 companies, as well as some commodities and other ETFs. Is a somewhat secret creation of sentiment trader, but open for internal use. That is, we don't know how they calculate it, but we can know its value. We will use these Optimism Indexes to make trade decisions. We want to identify when an ETF, Commodity, etc. reaches an extreme level of optimism or pessimism (80 and 20 respectively to sentimentrader, but your mileage may vary). When a ticker reaches our low or high extreme, we add it to a list to be backtested and parse the backtest results. By default we are saying "backtest this ticker to show what the results were the last time it reached this Optix extreme." We are testing to see the 1/3/6/9/12 month returns historically and can then decide if the results are strong enough to go long or short. 
 
-Specify your low and high extremes to your fitting and fill out your __settings.yaml__ elements. The database names will need to be updated to match yours, should they differ. At a glance, this script:
-* Queries our stg table to get the low and high extremes and creates a list of tickers.
+Specify your low and high extremes to your fitting and fill out your __settings.yaml__ elements. The database names will need to be updated to match yours. At a glance, this script:
+* Queries our 'daily indicator' stg table to get the low and high extremes and creates a list of tickers. 
 * Grab the Optix Name (i.e. SPY Optix), indicator name (SPY) and the last Optix close and enter them into three lists.
 * Generate five URLs for each indicator. Say SPY is above our High Extreme of 80 - we want to see the returns at 1/3/6/9/12 months of SPY when it has reached this level. Another solution is to test for the exact optix value, instead of just above 80. Add the backtest URL to a list
 * Run through the list of backtests to run, and parse the results. Store this data into the database.
