@@ -202,7 +202,7 @@ def run_backtest(webPageList):
                         currentAvgWin, currentAvgLoss, currentMaxRisk, currentTotalTrades, currentTotalPositive, currentTotalNegative, 
                         currentTimeInMarket, todaysDate, currentTotalReturn, currentAvgReturn, currentZSCore, currentBuyHoldReturn, currentWinRatePercent, currentAvgWin,
                         currentAvgLoss, currentMaxRisk, currentTotalTrades, currentTotalPositive, currentTotalNegative, currentTimeInMarket)
-        sql_insert = '''insert into "backtest_results" (symbol, indicator, lookback_period, observation_period, index_filter, indicator_smoothing, 
+        sql_insert = '''insert into "backtest_results_stg" (symbol, indicator, lookback_period, observation_period, index_filter, indicator_smoothing, 
                         test_start_date, test_end_date, exclude_overlapping, index_filter_swap, indicator_level, market_environment, 
                         index_ma_slope, total_return, avg_return, z_score, buy_hold_return, win_rate, avg_win,
                         avg_loss, max_risk, total_trades, total_pos, total_neg, time_in_mkt, todays_date)                    
@@ -287,9 +287,10 @@ def generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList):
             indicatorName = indicatorName.replace('model_score_','') # Indicator is entered into db as model_score_indexname i.e. model_score_xx, so we split that off.
             indicatorName = indicatorName.upper()
 
-            if indicatorName == 'XBT': indicatorName = 'BITCOIN' # Edge case where the indicator value does not match the sentimentrader url.
-            if indicatorName == 'BITCOIN' and lengthOfTime == '12':  # Edge case where the length of time value for bitcoin + 12 months causes an error.
+            if indicatorName == 'EFA':
                 continue
+            if indicatorName == 'XBT': indicatorName = 'BITCOIN' # Edge case where the indicator value does not match the sentimentrader url.
+            if indicatorName == 'INT' or indicatorName == 'SHORT': indicatorName = 'SPY' # Edge case - Short/Intermediate Term Optimism isn't an indicator.
 
             currentBackTestUrl = currentBackTestUrl.replace('indexValue', indicatorName) # Append the index/commodity/etf that we are backtesting.
             
