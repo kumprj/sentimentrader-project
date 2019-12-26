@@ -1,0 +1,7 @@
+boto3==1.9.239
+botocore==1.12.239
+certifi==2019.11.28
+chardet==3.0.4
+idna==2.8
+python-dateutil==2.8.0
+requests==2.22.0
