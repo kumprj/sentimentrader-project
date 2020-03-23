@@ -1,4 +1,20 @@
-# SentimenTrader Application
+# SentimentTrader Application
+
+## Overview
+Collaborated with friend on an application that backtests stocks against an Optimism Index (known as Optix - data set and testing engine supplied by sentimentrader.com). This index uses 2200 custom-made indicators to compute the Optimism Index value - an integer 0 to 100. A number above 80 indicates extreme optimism, and a number below 20 indicates extreme pessimism. The custom-made indicators are updated daily, and we backtest any stocks/ETFs/commodities that fall into these extreme bands for the 10 day moving average.
+
+Our Project
+We wrote a Python script to automate loading the daily-updated indicators into an AWS PostgreSQL RDS. We then have a second Python script to identify which tickers fall into our extreme bands, and we backtest them. Our backtests tell us, at a high level, "when the ticker was at this Optix level in the past, here are the returns over 1/3/6/9/12 month periods." We can then use this information to make informed trade decisions, be it shares or options contracts.
+
+Technology Stack - Python, Docker, Selenium, AWS Fargate, ECS, ECR, EC2, RDS, and S3.
+* Daily Indicator Load - Python script, which grabs a .CSV off the internet, parses it, and inserts the indicator information into PostgreSQL table.
+* Daily Backtest - Python script queries indicator table and returns list of tickers at both extremes. Script then loops through each ticker, testing it for historic returns and insert the results into PostgreSQL table. Tests are run using Selenium.
+* Above scripts are run in a Docker Container - containerizing each script allow us to schedule and run these regularly in Fargate.
+* NodeJS REST API using Serverless and AWS Lambda -> returns JSON to display on the website.
+* Daily Email report using Python and AWS SES to alert us of any Stock Tickers that have >80% or <20% success rates. 
+
+
+# Setup and Use
 
 The Application is structured into two components: daily indicator load and the backtesting script. This project is collaborated with [wellsjk](https://github.com/wellsjk). It requires a sentimentrader.com subscription and an AWS account.
 
