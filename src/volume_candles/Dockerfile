@@ -9,6 +9,7 @@ COPY settings.yaml .
 
 RUN cat requirements.txt | xargs -n 1 python3 -m pip install
 
+# For when it is migrated to AWS.
 # ARG aws_id=default_value
 # ENV AWS_ACCESS_KEY_ID=$aws_id
 
