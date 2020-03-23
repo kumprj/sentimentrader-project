@@ -13,6 +13,7 @@ Technology Stack - Python, Docker, Selenium, AWS Fargate, ECS, ECR, EC2, RDS, an
 * NodeJS REST API using Serverless and AWS Lambda -> returns JSON to display on the website.
 * Daily Email report using Python and AWS SES to alert us of any Stock Tickers that have >80% or <20% success rates. 
 
+For more information on the infrastructure and architecture, see below.
 
 # Setup and Use
 
@@ -26,12 +27,12 @@ You should now have:
 * Three tables created with the SQL Scripts. 
 
 ## Indicator Loading
-Folder __sentimentrader_indicator_loading__ handles the acquisition of Sentimentrader.com's Indicators and stores them in the database. Action items in this folder include replacing __SentimenTraderDailyIndactor.py__'s database values with your values (if they differ), and updating __settings.yaml__ with your credential information. A template is supplied. Once those table values and credentials are supplied, we are all set. At a glance, the script:
+Folder __src/sentimentrader_indicator_loading__ handles the acquisition of Sentimentrader.com's Indicators and stores them in the database. Action items in this folder include replacing __SentimenTraderDailyIndactor.py__'s database values with your values (if they differ), and updating __settings.yaml__ with your credential information. A template is supplied. Once those table values and credentials are supplied, we are all set. At a glance, the script:
 * Acquires a CSV File of the Sentimentrader Indicators and downloads it to the container in the default location.
 * Writes the indicator values to a stg table and prd table using Python csv/file parsing and a psycopg2 insert.
 
 ## Daily Backtest Script
-__SentimenTraderBacktest.py__ in sentimentrader_backtest folder handles the backtests. One of these Indicators is called an Optimism Index (Optix). An optimism index exists for each of the S&P 1500 companies, as well as some commodities and ETFs. Is a somewhat secret creation of sentiment trader, but open for internal use. That is, we don't know how they calculate it, but we can know its value. We will use these Optimism Indexes to make trade decisions. We want to identify when an ETF, Commodity, etc. reaches an extreme level of optimism or pessimism (80 and 20 respectively to sentimentrader, but your mileage may vary). When a ticker reaches our low or high extreme, we add it to a list to be backtested and parse the backtest results. By default we are saying "backtest this ticker to show what the results were the last time it reached this Optix extreme." We are testing to see the 1/3/6/9/12 month returns historically and can then decide if the results are strong enough to go long or short. 
+__SentimenTraderBacktest.py__ in src/sentimentrader_backtest folder handles the backtests. One of these Indicators is called an Optimism Index (Optix). An optimism index exists for each of the S&P 1500 companies, as well as some commodities and ETFs. Is a somewhat secret creation of sentiment trader, but open for internal use. That is, we don't know how they calculate it, but we can know its value. We will use these Optimism Indexes to make trade decisions. We want to identify when an ETF, Commodity, etc. reaches an extreme level of optimism or pessimism (80 and 20 respectively to sentimentrader, but your mileage may vary). When a ticker reaches our low or high extreme, we add it to a list to be backtested and parse the backtest results. By default we are saying "backtest this ticker to show what the results were the last time it reached this Optix extreme." We are testing to see the 1/3/6/9/12 month returns historically and can then decide if the results are strong enough to go long or short. 
 
 Specify your low and high extremes to your fitting and fill out your __settings.yaml__ elements. The database names will need to be updated to match yours. At a glance, this script:
 * Queries our 'daily indicator' stg table to get the low and high extremes and creates a list of tickers. 
@@ -61,4 +62,4 @@ Next create your [AWS Fargate Cluster](https://aws.amazon.com/ecs/) and click Cl
 Click your fargate cluster and you will see a list of tabs. Tasks lets you run a container once, or you can utilize a scheduled task. We run the daily indicator load and the backtests every 6-8 hours, though the values are usually only updated daily.
 
 # Using the Data
-The whole purpose of this is to take the backtest results and use them to make educated trade decisions. How someone handles this data is very open ended. We have a simple boostrapped webpage that has pages by date, and shows the results relevant to our risk tolerance (i.e. if SPY returned >5% for the next three observation periods). You can also add shorter and longer dated observation periods. We are displaying the results at [kumprj.com](https://kumprj.com). Additionally, we are sending an email each day of results showing high and low success rates. Please view the email_scripts folder for more information on that.
+The whole purpose of this is to take the backtest results and use them to make educated trade decisions. How someone handles this data is very open ended. We have a simple boostrapped webpage that has pages by date, and shows the results relevant to our risk tolerance (i.e. if SPY returned >5% for the next three observation periods). One can also add shorter and longer dated observation periods. We are displaying the results at [kumprj.com](https://kumprj.com). Additionally, we are emailing ourselves the extremely positive and extremely negative results every morning. Identifying these high and low success rate tickers are good for trading shares or options contracts with comfort.
