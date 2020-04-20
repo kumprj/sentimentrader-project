@@ -1,13 +1,10 @@
-# pylint: disable=no-name-in-module
-
-# from flask_table import Table, Col
-import psycopg2
 import csv
 import time
 from datetime import date
 import os
 import sys
 # from itertools import izip as izip
+import psycopg2
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from pyvirtualdisplay import Display
@@ -18,26 +15,31 @@ from credentials import loadCredentials
 # Sample Hedgers url. These will need revised.
 # 1) Cotton: https://sentimentrader.com/users/backtest/?indicator_smoothing=0&index_filter=0&market_environment=0&index_ma_slope=0&lookback_period=16&observation_value=1&observation_period=4&indicator_condition=3&indicator_level=30000&index=COTTON&indicator=Cotton+Hedgers+Position
 # Global Variables to specify High and Low Extreme Sentiment
-LOW_EXTREME = '25'
-HIGH_EXTREME = '75'
+LOW_EXTREME = '20'
+HIGH_EXTREME = '80'
+credentials = loadCredentials()
+database_user = credentials["database"]["username"]
+database_password = credentials["database"]["password"]
+database_db = credentials["database"]["database"]
+database_host = credentials["database"]["host"]
+database_port = credentials["database"]["port"]
 
 def main():
     query_database()
 
+
+def rds_connect():
+    return psycopg2.connect(user = database_user,
+        password = database_password,
+        host = database_host,
+        port = database_port,
+        database = database_db)
+
+
 def query_database():
-    credentials = loadCredentials()
-    database_user = credentials["database"]["username"]
-    database_password = credentials["database"]["password"]
-    database_db = credentials["database"]["database"]
-    database_host = credentials["database"]["host"]
-    database_port = credentials["database"]["port"]
 
-    connection = psycopg2.connect(user = database_user,
-                            password = database_password,
-                            host = database_host,
-                            port = database_port,
-                            database = database_db)
 
+    connection = rds_connect()
     cursor = connection.cursor()
     test_extreme = HIGH_EXTREME
     select_query = '''select name, indicator, "10DayMA" from public."indicator10daymovingaverage"
@@ -70,10 +72,116 @@ def query_database():
     # Pass our lists to generate the list of backtests
     generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList)
 
+def run_backtest(backtestUrl, driver):
+    driver.get(backtestUrl)
+    time.sleep(5)
+    
+    # Clicks the back-test url button to run the backtest.
+    driver.find_element_by_xpath("//span[contains(@class,'run-text')]").click()
+    time.sleep(12)
 
+    # Try catch to see if our backtest actually has data, or if there's no historical trades. If no historical trades, continue.
+    try:
+        isInvalid = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[2]/div/p").get_attribute("textContent").strip() # Checks for text that there were no trades.
+        failedTestSymbol = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[1]/div[1]/div/div/div/h3").get_attribute("textContent").strip() # Symbol
+        failedIndicatorSymbol = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[1]/div[2]/div/div/div/h3").get_attribute("textContent").strip() # Indicator
+        failedIndicatorLevel = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[1]/div[2]/div/div/div/h4[2]").get_attribute("textContent").strip() # Indicator Level
+        failedLookbackPeriod = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[1]/div[3]/div/div/div/h3").get_attribute("textContent").strip()             
+        failedObservationPeriod = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[1]/div[4]/div/div/div/h3").get_attribute("textContent").strip() 
+        
+        print('''%s 
+            Symbol %s
+            Indicator %s
+            failedIndicatorLevel %s
+            failedLookbackPeriod %s
+            failedObservationPeriod %s
+            ''' % (isInvalid, failedTestSymbol, failedIndicatorSymbol, failedIndicatorLevel, failedLookbackPeriod, failedObservationPeriod))            
+        return
+    except Exception:
+        pass
 
+    print('Backtest is a valid test with historical data. Proceeding..')     
+    # Get values of Backtest Summary section. TODO: Can probably get these from the variables in generate_list_of_backtests(), but it works.
+    # Column 1
+    currentTestSymbol = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[1]/div/div/div/h3").get_attribute("textContent").strip() # Symbol
+    print('Running backtest of %s' % (currentTestSymbol))
+    currentTestIndexFilter = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[1]/div/div/div/h4[1]").get_attribute("textContent").strip() # Index Filter
+    currentTestIndexFilterSwap = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[1]/div/div/div/h4[2]").get_attribute("textContent").strip() # Index Filter Swap
+    currentTestIndexMASlope = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[1]/div/div/div/h4[3]").get_attribute("textContent").strip() # Index MA Slope
+
+    # Column 2
+    currentTestIndicator = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[2]/div/div/div/h3").get_attribute("textContent").strip() # Indicator
+    currentTestIndicatorSmoothing = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[2]/div/div/div/h4[1]").get_attribute("textContent").strip() # Indicator Smoothing
+    currentTestIndicatorLevel = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[2]/div/div/div/h4[2]").get_attribute("textContent").strip() # Indicator Level
+    
+    # Column 3
+    currentTestLookbackPeriod = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[3]/div/div/div/h3").get_attribute("textContent").strip() # Lookback Period
+    currentTestStartdate = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[3]/div/div/div/h4[1]").get_attribute("textContent").strip() # Start Date
+    currentTestEndDate = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[3]/div/div/div/h4[2]").get_attribute("textContent").strip() # End Date
+
+    # Column 4
+    currentTestObservationPeriod = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[4]/div/div/div/h3").get_attribute("textContent").strip() # Observation Period
+    currentTestOverlapping = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[4]/div/div/div/h4[1]").get_attribute("textContent").strip() # Exclude Overlapping
+    currentTestMarketEnvironment = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[4]/div/div/div/h4[2]").get_attribute("textContent").strip() # Market Environment
+
+    # Backtest Statistics Table
+    # Row 1
+    currentTotalReturn = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[1]/div[1]/div[2]").get_attribute("textContent").strip() # Total Return
+    currentAvgReturn = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[1]/div[2]/div[2]").get_attribute("textContent").strip() # Average Return
+    currentZSCore = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[1]/div[3]/div[2]").get_attribute("textContent").strip() # Z-Score
+    currentBuyHoldReturn = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[1]/div[4]/div[2]").get_attribute("textContent").strip() # Buy & Hold Return
+
+    # Row 2
+    currentWinRatePercent = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[2]/div[1]/div[2]").get_attribute("textContent").strip() # Win Rate
+    currentAvgWin = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[2]/div[2]/div[2]").get_attribute("textContent").strip() # Average Win %
+    currentAvgLoss = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[2]/div[3]/div[2]").get_attribute("textContent").strip() # Average Loss %
+    currentMaxRisk = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[2]/div[4]/div[2]").get_attribute("textContent").strip() # Max Risk
+
+    # Row 3
+    currentTotalTrades = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[3]/div[1]/div[2]").get_attribute("textContent").strip() # Total Trades
+    currentTotalPositive = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[3]/div[2]/div[2]").get_attribute("textContent").strip() # Total Positive
+    currentTotalNegative = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[3]/div[3]/div[2]").get_attribute("textContent").strip() # Total Negative
+    currentTimeInMarket = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[3]/div[4]/div[2]").get_attribute("textContent").strip() # % Time In Market
+    todaysDate = date.today()
+    todaysDate = todaysDate.strftime("%m/%d/%y")
+
+    connection = rds_connect()
+    current_test_data = (currentTestSymbol, currentTestIndicator, currentTestLookbackPeriod, currentTestObservationPeriod, currentTestIndexFilter,
+                    currentTestIndicatorSmoothing, currentTestStartdate, currentTestEndDate, currentTestOverlapping, currentTestIndexFilterSwap, currentTestIndicatorLevel,
+                    currentTestMarketEnvironment, currentTestIndexMASlope, currentTotalReturn, currentAvgReturn, currentZSCore, currentBuyHoldReturn, currentWinRatePercent,
+                    currentAvgWin, currentAvgLoss, currentMaxRisk, currentTotalTrades, currentTotalPositive, currentTotalNegative, 
+                    currentTimeInMarket, todaysDate, currentTotalReturn, currentAvgReturn, currentZSCore, currentBuyHoldReturn, currentWinRatePercent, currentAvgWin,
+                    currentAvgLoss, currentMaxRisk, currentTotalTrades, currentTotalPositive, currentTotalNegative, currentTimeInMarket)
+    sql_insert = '''insert into "backtest_results" (symbol, indicator, lookback_period, observation_period, index_filter, indicator_smoothing, 
+                    test_start_date, test_end_date, exclude_overlapping, index_filter_swap, indicator_level, market_environment, 
+                    index_ma_slope, total_return, avg_return, z_score, buy_hold_return, win_rate, avg_win,
+                    avg_loss, max_risk, total_trades, total_pos, total_neg, time_in_mkt, todays_date)                    
+                    values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (indicator, observation_period, todays_date)
+                    DO UPDATE SET total_return = %s,
+                    avg_return = %s,
+                    z_score = %s,
+                    buy_hold_return = %s,
+                    win_rate = %s,
+                    avg_win = %s,
+                    avg_loss = %s,
+                    max_risk = %s,
+                    total_trades = %s,
+                    total_pos = %s,
+                    total_neg = %s,
+                    time_in_mkt = %s;
+                    '''
+    cursor = connection.cursor()
+    cursor.execute(sql_insert, current_test_data)
+    connection.commit()
+    cursor.close()
+    connection.close()
+    print('Backtest Table updated for %s for period %s' % (currentTestIndicator, currentTestObservationPeriod))
+
+    # End backtest loop
 # Loop through List of URLs, insert results into postgres database.
-def run_backtest(webPageList):
+def initiate_backtest(webPageList):
 
     # User Information
     credentials = loadCredentials()
@@ -104,134 +212,14 @@ def run_backtest(webPageList):
     password_field.send_keys(password)
     password_field.send_keys(Keys.RETURN)
     print('Successfully logged in')
-    
 
     for backtestUrl in webPageList:
+        run_backtest(backtestUrl, driver)
 
-        # Goes to the sentinmentrader.com backtest url from the webPageList.
-        driver.get(backtestUrl)
-        time.sleep(7)
-        
-        # Clicks the back-test url button to run the backtest.
-        driver.find_element_by_xpath("//span[contains(@class,'run-text')]").click()
-        time.sleep(12)
-
-        # Try catch to see if our backtest actually has data, or if there's no historical trades. If no historical trades, continue.
-        try:
-            isInvalid = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[2]/div/p").get_attribute("textContent").strip() # Checks for text that there were no trades.
-            failedTestSymbol = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[1]/div[1]/div/div/div/h3").get_attribute("textContent").strip() # Symbol
-            failedIndicatorSymbol = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[1]/div[2]/div/div/div/h3").get_attribute("textContent").strip() # Indicator
-            failedIndicatorLevel = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[1]/div[2]/div/div/div/h4[2]").get_attribute("textContent").strip() # Indicator Level
-            failedLookbackPeriod = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[1]/div[3]/div/div/div/h3").get_attribute("textContent").strip()             
-            failedObservationPeriod = driver.find_element_by_xpath("//div[@id='backtest-results']/div/div[2]/div[1]/div[4]/div/div/div/h3").get_attribute("textContent").strip() 
-            
-            print('''%s 
-                Symbol %s
-                Indicator %s
-                failedIndicatorLevel %s
-                failedLookbackPeriod %s
-                failedObservationPeriod %s
-                ''' % (isInvalid, failedTestSymbol, failedIndicatorSymbol, failedIndicatorLevel, failedLookbackPeriod, failedObservationPeriod))            
-            continue
-        except Exception:
-            pass
-
-        print('Backtest is a valid test with historical data. Proceeding..')     
-        # Get values of Backtest Summary section. TODO: Can probably get these from the variables in generate_list_of_backtests(), but it works.
-        # Column 1
-        currentTestSymbol = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[1]/div/div/div/h3").get_attribute("textContent").strip() # Symbol
-        print('Running backtest of %s' % (currentTestSymbol))
-        currentTestIndexFilter = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[1]/div/div/div/h4[1]").get_attribute("textContent").strip() # Index Filter
-        currentTestIndexFilterSwap = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[1]/div/div/div/h4[2]").get_attribute("textContent").strip() # Index Filter Swap
-        currentTestIndexMASlope = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[1]/div/div/div/h4[3]").get_attribute("textContent").strip() # Index MA Slope
-
-        # Column 2
-        currentTestIndicator = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[2]/div/div/div/h3").get_attribute("textContent").strip() # Indicator
-        currentTestIndicatorSmoothing = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[2]/div/div/div/h4[1]").get_attribute("textContent").strip() # Indicator Smoothing
-        currentTestIndicatorLevel = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[2]/div/div/div/h4[2]").get_attribute("textContent").strip() # Indicator Level
-        
-        # Column 3
-        currentTestLookbackPeriod = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[3]/div/div/div/h3").get_attribute("textContent").strip() # Lookback Period
-        currentTestStartdate = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[3]/div/div/div/h4[1]").get_attribute("textContent").strip() # Start Date
-        currentTestEndDate = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[3]/div/div/div/h4[2]").get_attribute("textContent").strip() # End Date
-
-        # Column 4
-        currentTestObservationPeriod = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[4]/div/div/div/h3").get_attribute("textContent").strip() # Observation Period
-        currentTestOverlapping = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[4]/div/div/div/h4[1]").get_attribute("textContent").strip() # Exclude Overlapping
-        currentTestMarketEnvironment = driver.find_element_by_xpath("//div[@id='summary-body']/div/div[4]/div/div/div/h4[2]").get_attribute("textContent").strip() # Market Environment
-
-        # Backtest Statistics Table
-        # Row 1
-        currentTotalReturn = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[1]/div[1]/div[2]").get_attribute("textContent").strip() # Total Return
-        currentAvgReturn = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[1]/div[2]/div[2]").get_attribute("textContent").strip() # Average Return
-        currentZSCore = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[1]/div[3]/div[2]").get_attribute("textContent").strip() # Z-Score
-        currentBuyHoldReturn = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[1]/div[4]/div[2]").get_attribute("textContent").strip() # Buy & Hold Return
-
-        # Row 2
-        currentWinRatePercent = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[2]/div[1]/div[2]").get_attribute("textContent").strip() # Win Rate
-        currentAvgWin = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[2]/div[2]/div[2]").get_attribute("textContent").strip() # Average Win %
-        currentAvgLoss = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[2]/div[3]/div[2]").get_attribute("textContent").strip() # Average Loss %
-        currentMaxRisk = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[2]/div[4]/div[2]").get_attribute("textContent").strip() # Max Risk
-
-        # Row 3
-        currentTotalTrades = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[3]/div[1]/div[2]").get_attribute("textContent").strip() # Total Trades
-        currentTotalPositive = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[3]/div[2]/div[2]").get_attribute("textContent").strip() # Total Positive
-        currentTotalNegative = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[3]/div[3]/div[2]").get_attribute("textContent").strip() # Total Negative
-        currentTimeInMarket = driver.find_element_by_xpath("//div[@id='stat_tab']/div[1]/div[3]/div[4]/div[2]").get_attribute("textContent").strip() # % Time In Market
-        todaysDate = date.today()
-        todaysDate = todaysDate.strftime("%m/%d/%y")
-
-        credentials = loadCredentials()
-        database_user = credentials["database"]["username"]
-        database_password = credentials["database"]["password"]
-        database_db = credentials["database"]["database"]
-        database_host = credentials["database"]["host"]
-        database_port = credentials["database"]["port"]
-
-        connection = psycopg2.connect(user = database_user,
-                                password = database_password,
-                                host = database_host,
-                                port = database_port,
-                                database = database_db)
-
-        current_test_data = (currentTestSymbol, currentTestIndicator, currentTestLookbackPeriod, currentTestObservationPeriod, currentTestIndexFilter,
-                        currentTestIndicatorSmoothing, currentTestStartdate, currentTestEndDate, currentTestOverlapping, currentTestIndexFilterSwap, currentTestIndicatorLevel,
-                        currentTestMarketEnvironment, currentTestIndexMASlope, currentTotalReturn, currentAvgReturn, currentZSCore, currentBuyHoldReturn, currentWinRatePercent,
-                        currentAvgWin, currentAvgLoss, currentMaxRisk, currentTotalTrades, currentTotalPositive, currentTotalNegative, 
-                        currentTimeInMarket, todaysDate, currentTotalReturn, currentAvgReturn, currentZSCore, currentBuyHoldReturn, currentWinRatePercent, currentAvgWin,
-                        currentAvgLoss, currentMaxRisk, currentTotalTrades, currentTotalPositive, currentTotalNegative, currentTimeInMarket)
-        sql_insert = '''insert into "backtest_results_10ma" (symbol, indicator, lookback_period, observation_period, index_filter, indicator_smoothing, 
-                        test_start_date, test_end_date, exclude_overlapping, index_filter_swap, indicator_level, market_environment, 
-                        index_ma_slope, total_return, avg_return, z_score, buy_hold_return, win_rate, avg_win,
-                        avg_loss, max_risk, total_trades, total_pos, total_neg, time_in_mkt, todays_date)                    
-                        values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (indicator, observation_period, todays_date)
-                        DO UPDATE SET total_return = %s,
-                        avg_return = %s,
-                        z_score = %s,
-                        buy_hold_return = %s,
-                        win_rate = %s,
-                        avg_win = %s,
-                        avg_loss = %s,
-                        max_risk = %s,
-                        total_trades = %s,
-                        total_pos = %s,
-                        total_neg = %s,
-                        time_in_mkt = %s;
-                        '''
-        cursor = connection.cursor()
-        cursor.execute(sql_insert, current_test_data)
-        connection.commit()
-        cursor.close()
-        connection.close()
-        print('Backtest Table updated for %s for period %s' % (currentTestIndicator, currentTestObservationPeriod))
-
-    # End backtest loop
     # Close driver for chrome.
     driver.close()
     
-# end run_backtest
+# end initiate_backtest
 
 # Get low and high extremes to backtest.
 def get_closest_optix_extreme(lastClose):
@@ -257,14 +245,10 @@ def generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList):
     lookbackPeriodValue = '16' # All History    
     observationPeriodValue = '4' # 4 is months
     indicatorConditionValue = '3' # 3 is above
-    indicatorLevelValue = '0' # 20 and 80 are what we identified as extremes, and these are set in the get_closest_optix_extreme.
-    # indexValue = 'SPY' # ETF/Commodity/index to query <-- I believe this is unused/not needed.
-    # observationValue = '1' # How many months to look back <-- I believe this is unused/not needed.
-    # indicatorValue = 'SPY+Optix' # Optix value <-- I believe this is unused/not needed.
+    indicatorLevelValue = '0' 
 
-    # for optixName, indicatorName, lastClose in izip(optixNameList, indicatorNameList, lastCloseList): # Python 2 code
     for optixName, indicatorName, lastClose in zip(optixNameList, indicatorNameList, lastCloseList):
-    # for optixName, indicatorName in izip(optixNameList, indicatorNameList):
+
         fullLengthIndicatorName = indicatorName
         for lengthOfTime in listOfObservationValues:
             isACompany = False
@@ -285,8 +269,7 @@ def generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList):
             indicatorName = indicatorName.replace('model_score_','') # Indicator is entered into db as model_score_indexname i.e. model_score_xx, so we split that off.
             indicatorName = indicatorName.upper()
 
-            if indicatorName == 'EFA':
-                continue
+            if indicatorName == 'EFA': continue # Edge case for unused ETF.
             if indicatorName == 'XBT': indicatorName = 'BITCOIN' # Edge case where the indicator value does not match the sentimentrader url.
             if indicatorName == 'INT' or indicatorName == 'SHORT': indicatorName = 'SPY' # Edge case - Short/Intermediate Term Optimism isn't an indicator.
 
@@ -320,10 +303,9 @@ def generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList):
             webPageList.append(currentBackTestUrl)  
 
         # end time period back tests of 1/3/6/9/12 months          
-
     # end for loop of optix name, indicator, last close
 
-    run_backtest(webPageList)
+    initiate_backtest(webPageList)
 # end generate_list_of_backtests
 
 
