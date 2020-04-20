@@ -37,8 +37,6 @@ def rds_connect():
 
 
 def query_database():
-
-
     connection = rds_connect()
     cursor = connection.cursor()
     test_extreme = HIGH_EXTREME
@@ -71,6 +69,7 @@ def query_database():
 
     # Pass our lists to generate the list of backtests
     generate_list_of_backtests(optixNameList, indicatorNameList, lastCloseList)
+
 
 def run_backtest(backtestUrl, driver):
     driver.get(backtestUrl)
