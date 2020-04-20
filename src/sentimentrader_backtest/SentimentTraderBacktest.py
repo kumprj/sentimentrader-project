@@ -181,6 +181,8 @@ def run_backtest(backtestUrl, driver):
 
     # End backtest loop
 # Loop through List of URLs, insert results into postgres database.
+
+
 def initiate_backtest(webPageList):
 
     # User Information
